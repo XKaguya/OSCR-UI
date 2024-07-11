@@ -40,6 +40,11 @@ jobs:
         with:
           name: build_release
           path: .
+      - name: Download Source
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: build\exe.win-amd64-3.12
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
