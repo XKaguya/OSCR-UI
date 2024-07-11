@@ -40,9 +40,7 @@ class OSCRUI():
     from .widgetbuilder import create_button_series, create_combo_box, create_entry, create_frame
     from .widgetbuilder import create_icon_button, create_label, style_table
     from .leagueconnector import apply_league_table_filter, download_and_view_combat
-    from .leagueconnector import (
-            establish_league_connection, extend_ladder, slot_ladder_default, slot_ladder_season,
-            update_seasonal_records)
+    from .leagueconnector import establish_league_connection, extend_ladder, slot_ladder
     from .leagueconnector import upload_callback
 
     app_dir = None
@@ -80,7 +78,6 @@ class OSCRUI():
         self.live_parser = None
         self.init_settings()
         self.init_config()
-        reset_temp_folder(self.config['templog_folder_path'])
         self.app, self.window = self.create_main_window()
         self.init_parser()
         self.cache_assets()
@@ -150,8 +147,6 @@ class OSCRUI():
         """
         self.current_combat_id = -1
         self.current_combat_path = ''
-        self.config['templog_folder_path'] = os.path.abspath(
-                self.app_dir + self.config['templog_folder_path'])
         self.config['ui_scale'] = self.settings.value('ui_scale', type=float)
         self.config['live_scale'] = self.settings.value('live_scale', type=float)
         self.config['icon_size'] = round(
@@ -170,7 +165,6 @@ class OSCRUI():
             setting = self.settings.value(setting_key, type=settings_type, defaultValue='')
             if setting:
                 settings[setting_key] = setting
-        settings['templog_folder_path'] = self.config['templog_folder_path']
         return settings
 
     @property
@@ -372,14 +366,13 @@ class OSCRUI():
         background_layout = QVBoxLayout()
         background_layout.setContentsMargins(0, 0, 0, 0)
         background_frame.setLayout(background_layout)
-        self.map_selector = QListWidget(background_frame)
-        self.map_selector.setStyleSheet(self.get_style_class('QListWidget', 'listbox'))
-        self.map_selector.setFont(self.theme_font('listbox'))
-        self.map_selector.setSizePolicy(SMIXMIN)
-        self.widgets.ladder_selector = self.map_selector
-        self.map_selector.itemClicked.connect(
-                lambda clicked_item: self.slot_ladder_default(clicked_item.text()))
-        background_layout.addWidget(self.map_selector)
+        map_selector = QListWidget(background_frame)
+        map_selector.setStyleSheet(self.get_style_class('QListWidget', 'listbox'))
+        map_selector.setFont(self.theme_font('listbox'))
+        map_selector.setSizePolicy(SMIXMIN)
+        self.widgets.ladder_selector = map_selector
+        map_selector.itemClicked.connect(lambda clicked_item: self.slot_ladder(clicked_item.text()))
+        background_layout.addWidget(map_selector)
         all_layout.addWidget(background_frame, stretch=1)
         all_frame.setLayout(all_layout)
 
@@ -392,15 +385,15 @@ class OSCRUI():
         background_layout = QVBoxLayout()
         background_layout.setContentsMargins(0, 0, 0, 0)
         background_frame.setLayout(background_layout)
-        self.favorite_selector = QListWidget(background_frame)
-        self.favorite_selector.setStyleSheet(self.get_style_class('QListWidget', 'listbox'))
-        self.favorite_selector.setFont(self.theme_font('listbox'))
-        self.favorite_selector.setSizePolicy(SMIXMIN)
-        self.widgets.favorite_ladder_selector = self.favorite_selector
-        self.favorite_selector.addItems(self.settings.value('favorite_ladders', type=list))
-        self.favorite_selector.itemClicked.connect(
-                lambda clicked_item: self.slot_ladder_default(clicked_item.text()))
-        background_layout.addWidget(self.favorite_selector)
+        favorite_selector = QListWidget(background_frame)
+        favorite_selector.setStyleSheet(self.get_style_class('QListWidget', 'listbox'))
+        favorite_selector.setFont(self.theme_font('listbox'))
+        favorite_selector.setSizePolicy(SMIXMIN)
+        self.widgets.favorite_ladder_selector = favorite_selector
+        favorite_selector.addItems(self.settings.value('favorite_ladders', type=list))
+        favorite_selector.itemClicked.connect(
+                lambda clicked_item: self.slot_ladder(clicked_item.text()))
+        background_layout.addWidget(favorite_selector)
         favorites_layout.addWidget(background_frame, stretch=1)
         favorites_frame.setLayout(favorites_layout)
 
@@ -408,24 +401,20 @@ class OSCRUI():
                 'Seasonal Records:', 'label_heading', frame, {'margin-top': '@isp'})
         left_layout.addWidget(map_label)
 
-        self.variant_list = self.create_combo_box(frame)
-        self.variant_list.currentTextChanged.connect(lambda _: self.update_seasonal_records())
-        left_layout.addWidget(self.variant_list)
-
         background_frame = self.create_frame(all_frame, 'light_frame', style_override={
                 'border-radius': self.theme['listbox']['border-radius'], 'margin-top': '@csp'},
                 size_policy=SMINMIN)
         background_layout = QVBoxLayout()
         background_layout.setContentsMargins(0, 0, 0, 0)
         background_frame.setLayout(background_layout)
-        self.season_selector = QListWidget(background_frame)
-        self.season_selector.setStyleSheet(self.get_style_class('QListWidget', 'listbox'))
-        self.season_selector.setFont(self.theme_font('listbox'))
-        self.season_selector.setSizePolicy(SMIXMIN)
-        self.widgets.season_ladder_selector = self.season_selector
-        self.season_selector.currentTextChanged.connect(
-                lambda new_text: self.slot_ladder_season(new_text))
-        background_layout.addWidget(self.season_selector)
+        season_selector = QListWidget(background_frame)
+        season_selector.setStyleSheet(self.get_style_class('QListWidget', 'listbox'))
+        season_selector.setFont(self.theme_font('listbox'))
+        season_selector.setSizePolicy(SMIXMIN)
+        self.widgets.season_ladder_selector = season_selector
+        season_selector.currentTextChanged.connect(
+                lambda new_text: self.slot_ladder(new_text))
+        background_layout.addWidget(season_selector)
         left_layout.addWidget(background_frame, stretch=1)
 
         frame.setLayout(left_layout)
@@ -525,8 +514,6 @@ class OSCRUI():
         self.current_combats.setStyleSheet(self.get_style_class('QListWidget', 'listbox'))
         self.current_combats.setFont(self.theme_font('listbox'))
         self.current_combats.setSizePolicy(SMIXMIN)
-        self.current_combats.doubleClicked.connect(
-            lambda: self.analyze_log_callback(self.current_combats.currentRow(), parser_num=1))
         background_layout.addWidget(self.current_combats)
         left_layout.addWidget(background_frame, stretch=1)
 
