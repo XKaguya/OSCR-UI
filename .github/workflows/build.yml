@@ -25,6 +25,10 @@ jobs:
       with:
         name: build_release
         path: dist/OSCR-UI-win64.msi
+    - uses: actions/upload-artifact@v2
+      with:
+        name: build_src
+        path: build\exe.win-amd64-3.12\*
 
   release:
     if: github.event.repository.owner.id == github.event.sender.id 
