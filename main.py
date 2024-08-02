@@ -6,7 +6,7 @@ from OSCRUI import OSCRUI
 
 class Launcher():
 
-    version = '2024.07b090'
+    version = '2024.07b250'
     __version__ = '0.2'
 
     # holds the style of the app
@@ -128,7 +128,7 @@ class Launcher():
             'border-radius': '@br',
             'margin': (3, 3, 3, 3),
             'padding': (2, 5, 0, 5),
-            'font': ('Overpass', 13, 'medium'),
+            'font': ('Overpass', 12, 'medium'),
             ':hover': {
                 'color': '@fg',
                 'border-width': '@bw',
@@ -701,8 +701,8 @@ class Launcher():
     @staticmethod
     def app_config() -> dict:
         config = {
-            'minimum_window_width': 1370,
-            'minimum_window_height': 907,
+            'minimum_window_width': 1280,
+            'minimum_window_height': 720,
             'settings_path': r'/.OSCR_settings.ini',
             'templog_folder_path': r'/~temp_log_files',
             'link_website': 'https://oscr.stobuilds.com',
@@ -779,6 +779,7 @@ class Launcher():
                 'log_size_warning': True,
                 'ui_scale': 1,
                 'live_scale': 1,
+                'live_enabled': False,
             }
         }
         return config
